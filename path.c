@@ -22,12 +22,30 @@
  * STRUCTURES
  */
 
+/* Cell state */
+struct State {
+	int pathMarker;
+	int empty;
+	int obst;
+	int start;
+	int goal;
+};
+
+/* Single cell */
+struct Cell {
+	double x;
+	double y;
+	struct State s;
+	double value;
+};
+
 /*
  * GLOBAL VARS
  */
-double g_field[FIELD_M][FIELD_N];
+struct Cell g_field[FIELD_M][FIELD_N];
 int g_obstW = 3;
 int g_obstH = 2;
+int cnt = 1;
 
 /*
  * Function Name: Init
@@ -37,10 +55,17 @@ int g_obstH = 2;
 int Init() {
 	int i,j;
 
-	/* Populate field */
+	/* Initialize field */
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
-			g_field[i][j] = MAX_DISTANCE;
+			g_field[i][j].x = j;
+			g_field[i][j].y = i;
+			g_field[i][j].s.pathMarker = 0;
+			g_field[i][j].s.empty = 1;
+			g_field[i][j].s.obst = 0;
+			g_field[i][j].s.start = 0;
+			g_field[i][j].s.goal = 0;
+			g_field[i][j].value = MAX_DISTANCE;
 		}
 	}
 
@@ -57,13 +82,9 @@ int Manhattan(void) {
 	int i, j;
 	int current;
 
-	/* Determine where we are */
-	int start[2] = {0, 0};
-
-	/* Begin distancing */
+	/* Find paths */
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
-			current = g_field[i][j];
 		}
 	}
 
@@ -82,7 +103,9 @@ void Gen_Obst(int w, int h) {
 	/* Create obstacle */
 	for (i = 0; i < h; i++) {
 		for (j = 0; j < w; j++) {
-			g_field[i + h][j + w] = 0;
+			g_field[i + h][j + w].value = 0;
+			g_field[i + h][j + w].s.obst = 1;
+			g_field[i + h][j + w].s.empty = 0;
 		}
 	}
 }
@@ -98,7 +121,7 @@ void Print_Field(void) {
 
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
-			printf("%4.0f ", g_field[i][j]);
+			printf("%4.0f ", g_field[i][j].value);
 		}
 		printf("\n");
 	}
