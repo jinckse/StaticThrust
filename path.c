@@ -1,5 +1,5 @@
 /*
- * File: path.h
+ * File: path.c
  * Description: Path planning functions
  */
 
@@ -96,9 +96,9 @@ void Gen_Obst(int w, int h) {
 	int i,j;
 
 	/* Create obstacle */
-	for (i = 0; i < g_obstH; i++) {
-		for (j = 0; j < g_obstW; j++) {
-			g_field[i + g_obstH][j + g_obstW] = 0;
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) {
+			g_field[i + h][j + w] = 0;
 		}
 	}
 }
@@ -118,7 +118,7 @@ int main() {
 	Init();
 	Print_Field();
 	printf("\n");
-	Gen_Obst(g_obstW, g_obstW);
+	Gen_Obst(g_obstW, g_obstH);
 	Print_Field();
 	printf("\n");
 	Manhattan();
