@@ -1,0 +1,155 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+#include <stdio.h>
+
+/*
+ * CONSTANTS
+ */
+#define FIELD_M 10                              /*Number of rows in the field*/
+#define FIELD_N 16                              /*Number of columns in the field*/
+
+#define CELL_WIDTH 0.305
+#define STEP 0.1525
+
+#define MAX_DISTANCE 161
+#define MAX_OBSTACLES 25                        /* maximum number of obstacles */
+
+
+/*
+ * GLOBAL VARS
+ */
+int num_obstacles = 13;                         /* number of obstacles */
+double startInitial[2] = {0.305, 1.219};        /* start location */
+double goalInitial[2] = {3.658, 1.829};         /* goal location */
+int startFinal[2];                              /* start location translated to block location */
+int goalFinal[2] ;                              /* goal location translated to block location*/
+int obstacleFinal[num_obstacles][2];            /*holds block locations of obstacles*/
+int filledMap[FIELD_M][FIELD_N];                /*Array of final values after Manhattan propagation*/
+struct Map Map1[FIELD_M][FIELD_N];              /*Structure array to be used for the map*/
+
+/*Struct to be used in the Map array*/
+struct Map{
+    int value = 0;
+    int available = 1;
+    int complete = 0;
+};
+
+/* obstacle locations */
+double obstacleInitial[num_obstacles][2] =
+{{0.61, 2.743},{0.915, 2.743},{1.219, 2.743},{1.829, 1.219},
+{1.829, 1.524},{ 1.829, 1.829}, {1.829, 2.134},{2.743, 0.305},
+{2.743, 0.61},{2.743, 0.915},{2.743, 2.743},{3.048, 2.743},
+{3.353, 2.743}};
+
+/*
+*Converting Initial locations to block values
+*/
+int ConvertLocations(void){
+    int i;
+
+    /*Changing values for obstacles*/
+    for (i=0; i<num_obstacles; i++){
+        obstacleFinal[i][0] = obstacleInitial[i][0]/CELL_WIDTH;
+        obstacleFinal[i][1] = obstacleInitial[i][1]/CELL_WIDTH;
+    }
+    /*Changing values for start*/
+    startFinal[0] = startInitial[0]/CELL_WIDTH;
+    startFinal[1] = startInitial[0]/CELL_WIDTH;
+    /*Changing values for goal*/
+    goalFinal[0] = goalInitial[0]/CELL_WIDTH;
+    goalFinal[1] = goalInitial[1]/CELL_WIDTH;
+}
+
+
+/*
+ *Adding Obstacles
+ */
+int PlaceObject(void){
+    int i;
+    /*Adding Obstacles to map array*/
+    for (i = 0; i < num_obstacles; i++) {
+        Map1[obstacleFinal[i][0]][obstacleFinal[i][1]].value = -1;
+        Map1[obstacleFinal[i][0]][obstacleFinal[i][1]].available = 0;
+        Map1[obstacleFinal[i][0]][obstacleFinal[i][1]].complete = 0;
+    }
+    /*Adding Start location to map array*/
+    Map1[startFinal[0]][startFinal[1]].value = -1;
+    Map1[startFinal[0]][startFinal[1]].available = 0;
+    Map1[startFinal[0]][startFinal[1]].complete = 0;
+
+    /*Adding End location to map array*/
+    Map1[goalFinal[0]][goalFinal[1]].value = -1;
+    Map1[goalFinal[0]][goalFinal[1]].available = 0;
+    Map1[goalFinal[0]][goalFinal[1]].complete = 1;
+}
+
+/*
+ * Function Name: Manhattan
+ * Description: Implement cell decomposition on game field
+ * Parameters: None
+ * Returns: int ret
+ */
+int Manhattan(void) {
+	int i, j;
+	int current;
+    int counter = 1;
+    int exit = 0;
+
+    while (exit == 0){
+
+        /* Begin decomposition */
+        for (i = 0; i < FIELD_M; i++) {
+            for (j = 0; j < FIELD_N; j++) {
+
+                /* Only map cells that haven't been completed */
+                if(Map1[i][j].available == 1){
+
+                    Map1[i][j].value = counter;
+                }
+                else
+                    {/*Should never get here*/}
+            }
+        }
+
+        for (i = 0; i < FIELD_M; i++) {
+            for (j = 0; j < FIELD_N; j++) {
+                    if (Map1[i][j].complete == 1) {
+
+                        Map1[i+1][j].complete == 1;
+                        Map1[i-1][j].complete == 1;
+                        Map1[i][j+1].complete == 1;
+                        Map1[i][j-1].complete == 1;
+
+                        Map1[i+1][j].available == 0;
+                        Map1[i-1][j].available == 0;
+                        Map1[i][j+1].available == 0;
+                        Map1[i][j-1].available == 0;
+                    }
+                    else
+                        { /* Should never get here */ }
+            }
+        }
+
+        counter += 1;
+
+        if (Map1[0][0].complete == 1){
+            exit = 1;
+        }
+    }
+	return 1;
+}
+
+int FillMap(void){
+    int i,j;
+
+    for (i = 0; i < FIELD_M; i++) {
+        for (j = 0; j < FIELD_N; j++) {
+            filledMap[i][j] = Map1[i][j].value;
+        }
+    }
+    return;
+}
