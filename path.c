@@ -1,6 +1,7 @@
 /*
  * File: path.c
  * Description: Path planning function C module
+ * TODO: Implement neighbor assignment for graph algorithm after general initializing
  */
 
 #include <stdio.h>
@@ -16,6 +17,10 @@
 #define STEP 0.1525
 #define MAX_DISTANCE 160
 
+#define NORMAL 1
+#define CORNER 2
+#define EDGE 3
+
 /* 
  * MACROS
  */
@@ -27,7 +32,7 @@
 /* Point state */
 struct State {
 	int pathMarker;
-	int empty;
+	int processed;
 	int obst;
 	int start;
 	int goal;
@@ -39,6 +44,11 @@ struct Point {
 	double y;
 	struct State s;
 	double value;
+	int type;
+	struct Point* n_up;
+	struct Point* n_down;
+	struct Point* n_left;
+	struct Point* n_right;
 };
 
 /*
@@ -64,7 +74,7 @@ int Init() {
 			g_field[i][j].x = j;
 			g_field[i][j].y = FIELD_M - (i + 1);
 			g_field[i][j].s.pathMarker = 0;
-			g_field[i][j].s.empty = 1;
+			g_field[i][j].s.processed = 0;
 			g_field[i][j].s.obst = 0;
 			g_field[i][j].s.start = 0;
 			g_field[i][j].s.goal = 0;
@@ -78,11 +88,13 @@ int Init() {
 			if ( (g_field[i][j].x == Meters_To_Feet(g_start[0]) )
 				&& (g_field[i][j].y == Meters_To_Feet(g_start[1])) ) {
 				g_field[i][j].s.start = 1;
+				g_field[i][j].s.processed = 1;
 				g_field[i][j].value = 111;
 			}
 			else if ( (g_field[i][j].x == Meters_To_Feet(g_goal[0]) )
 				&& (g_field[i][j].y == Meters_To_Feet(g_goal[1])) ) {
 				g_field[i][j].s.goal = 1;
+				g_field[i][j].s.processed = 1;
 				g_field[i][j].value = 999;
 			}
 		}
@@ -95,8 +107,20 @@ int Init() {
 				if ( (g_field[i][j].x == Meters_To_Feet(g_obstacle[k][0]) )
 					&& (g_field[i][j].y == Meters_To_Feet(g_obstacle[k][1]) ) ) {
 					g_field[i][j].s.obst = 1;
+					g_field[i][j].s.processed = 1;
 					g_field[i][j].value = 666;
 				}
+			}
+		}
+	}
+
+	/* Set path locations*/
+	for (i = 0; i < FIELD_M; i++) {
+		for(j = 0; j < FIELD_N; j++) {
+			if ( (!g_field[i][j].s.start) && (!g_field[i][j].s.goal)
+				&& (!g_field[i][j].s.obst) ) {
+				g_field[i][j].s.pathMarker = 1;	
+				g_field[i][j].value = -1;
 			}
 		}
 	}
@@ -112,11 +136,15 @@ int Init() {
  */
 int Manhattan(void) {
 	int i, j;
-	int current;
 
 	/* Find paths */
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
+			/* Only populate non obstacles and start / goal points */
+			if ( !Is_Proc_Adjacent(g_field, i, j) ) {
+				g_field[i][j].value = cnt;		
+				printf("Got Here...\n");
+			}
 		}
 	}
 
@@ -137,7 +165,6 @@ void Gen_Obst(int w, int h) {
 		for (j = 0; j < w; j++) {
 			g_field[i + h][j + w].value = 0;
 			g_field[i + h][j + w].s.obst = 1;
-			g_field[i + h][j + w].s.empty = 0;
 		}
 	}
 }
@@ -192,10 +219,23 @@ int Meters_To_Feet(double m) {
 	return r;
 }
 
+/*
+ * Function Name: Is_Proc_Adjacent
+ * Description: Determine if a processed point is nearby
+ * Parameters: struct Point p, int x, int y
+ * Returns: int r
+ */
+int Is_Proc_Adjacent(struct Point p[FIELD_N][FIELD_M], int x, int y) {
+	/* Check all directions */
+		return 0;
+}
+
 /* Main routine */
 int main() {
 	Init();
 	Print_Field();
-	Gen_Obst(g_obstW, g_obstH);
+	printf("\n");
 	Manhattan();
+	Print_Field();
+	printf("\n");
 }
