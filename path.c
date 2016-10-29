@@ -55,6 +55,7 @@ struct Point {
  * GLOBAL VARS
  */
 struct Point g_field[FIELD_M][FIELD_N];
+struct Point g_goalPoint, g_startPoint;;
 int g_obstW = 3;
 int g_obstH = 2;
 int cnt = 1;
@@ -62,7 +63,7 @@ int debug = 1;
 
 /*
  * Function Name: Init
- * Description: Initialize system
+ * Description: Initialize grid
  * Returns: int ret
  */
 int Init() {
@@ -90,6 +91,7 @@ int Init() {
 					( (j == FIELD_N - 1) && (i == FIELD_M - 1) )
 				) {
 				g_field[i][j].type = CORNER;
+				g_field[i][j].s.processed = 0;
 				g_field[i][j].value = 888;
 			}
 
@@ -99,10 +101,12 @@ int Init() {
 					( ( (i == FIELD_M-1) || (j == FIELD_N-1) ) && (g_field[i][j].type != CORNER) )
 				) {
 				g_field[i][j].type = EDGE;
+				g_field[i][j].s.processed = 0;
 				g_field[i][j].value = 777;
 			}
 			else {
 				g_field[i][j].type = NORMAL;
+				g_field[i][j].s.processed = 0;
 			}
 		}
 	}
@@ -113,14 +117,16 @@ int Init() {
 			if ( (g_field[i][j].x == Meters_To_Feet(g_start[0]) )
 				&& (g_field[i][j].y == Meters_To_Feet(g_start[1])) ) {
 				g_field[i][j].s.start = 1;
-				g_field[i][j].s.processed = 1;
+				g_field[i][j].s.processed = 0;
 				g_field[i][j].value = 111;
+				g_startPoint = g_field[i][j];
 			}
 			else if ( (g_field[i][j].x == Meters_To_Feet(g_goal[0]) )
 				&& (g_field[i][j].y == Meters_To_Feet(g_goal[1])) ) {
 				g_field[i][j].s.goal = 1;
-				g_field[i][j].s.processed = 1;
+				g_field[i][j].s.processed = 0;
 				g_field[i][j].value = 999;
+				g_goalPoint = g_field[i][j];
 			}
 		}
 	}
@@ -132,7 +138,7 @@ int Init() {
 				if ( (g_field[i][j].x == Meters_To_Feet(g_obstacle[k][0]) )
 					&& (g_field[i][j].y == Meters_To_Feet(g_obstacle[k][1]) ) ) {
 					g_field[i][j].s.obst = 1;
-					g_field[i][j].s.processed = 1;
+					g_field[i][j].s.processed = 0;
 					g_field[i][j].value = 666;
 				}
 			}
@@ -145,6 +151,7 @@ int Init() {
 			if ( (!g_field[i][j].s.start) && (!g_field[i][j].s.goal)
 				&& (!g_field[i][j].s.obst) ) {
 				g_field[i][j].s.pathMarker = 1;	
+				g_field[i][j].s.processed = 0;
 			}
 		}
 	}
@@ -185,11 +192,79 @@ int Manhattan(int block) {
 					!g_field[i][j].s.obst &&
 					!g_field[i][j].s.processed
 				) {
-				g_field[i][j].value = block;	
+
+				/* In first pass check for goal */
+				if(block == 1) {
+					if ( 
+						g_field[i][j].n_up -> s.goal ||
+						g_field[i][j].n_down -> s.goal ||
+						g_field[i][j].n_left -> s.goal ||	
+						g_field[i][j].n_right -> s.goal	
+					)
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;	
+				}
+
+				/* In remaining passes check for processed points and start */
+				else {
+					/* If current point is above and to the right of the goal */
+					if ( ((g_field[i][j].y > g_goalPoint.y) && (g_field[i][j].x > g_goalPoint.x)) &&
+						(g_field[i][j].n_down -> s.processed || g_field[i][j].n_left -> s.processed)) {
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;	
+					}
+					/* If current point is above and to the left of the goal */
+					else if ( ((g_field[i][j].y > g_goalPoint.y) && (g_field[i][j].x < g_goalPoint.x)) &&
+						(g_field[i][j].n_down -> s.processed || g_field[i][j].n_right -> s.processed)) {
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;	
+					}
+					/* If current point is below and to the right of the goal */
+					else if ( ((g_field[i][j].y < g_goalPoint.y) && (g_field[i][j].x > g_goalPoint.x)) &&
+						(g_field[i][j].n_up -> s.processed || g_field[i][j].n_left -> s.processed)) {
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;	
+					}
+					/* If current point is below and to the left of the goal */
+					else if ( ((g_field[i][j].y < g_goalPoint.y) && (g_field[i][j].x < g_goalPoint.x)) &&
+						(g_field[i][j].n_up -> s.processed || g_field[i][j].n_right -> s.processed)) {
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;	
+					}
+					/* If current point is above the goal */
+					else if ( ((g_field[i][j].y > g_goalPoint.y) && (g_field[i][j].x == g_goalPoint.x)) &&
+						(g_field[i][j].n_down -> s.processed)) {
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;	
+					}
+					/* If current point is below the goal */
+					else if ( ((g_field[i][j].y < g_goalPoint.y) && (g_field[i][j].x == g_goalPoint.x)) &&
+						(g_field[i][j].n_up -> s.processed)) {
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;	
+						printf("Maybe?\n");
+					}
+					/* If current point is to the right of the goal */
+					else if ( ((g_field[i][j].y == g_goalPoint.y) && (g_field[i][j].x > g_goalPoint.x)) &&
+						(g_field[i][j].n_left -> s.processed)) {
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;	
+					}
+					/* If current point is to the left of the goal */
+					else if ( ((g_field[i][j].y == g_goalPoint.y) && (g_field[i][j].x < g_goalPoint.x)) &&
+						(g_field[i][j].n_right -> s.processed)) {
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;	
+					}
+					else {
+						/* Should never get here */
+						printf("Got there...\n");
+					}
+				}
 			}	
 		}
 	}
-	if (block < MAX_DISTANCE) {
+	if (block < 2) {
 		Manhattan(++block);
 	}
 
@@ -283,5 +358,6 @@ int main() {
 		printf("Right = %f\n", g_field[1][1].n_right -> value);
 		printf("Up = %f\n", g_field[1][1].n_up -> value);
 		printf("Down = %f\n", g_field[1][1].n_down -> value);
+		printf("goalPoint: (%f, %f)\n", g_goalPoint.x, g_goalPoint.y);
 	}
 }
