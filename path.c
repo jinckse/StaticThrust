@@ -15,7 +15,7 @@
 #define FIELD_N 17
 #define CELL_WIDTH 0.305
 #define STEP 0.1525
-#define MAX_DISTANCE 160
+#define MAX_DISTANCE 16
 
 #define NORMAL 1
 #define CORNER 2
@@ -68,7 +68,7 @@ int debug = 1;
 int Init() {
 	int i,j,k;
 
-	/* Initialize field */
+	/* Initialize points */
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
 			g_field[i][j].x = j;
@@ -79,9 +79,34 @@ int Init() {
 			g_field[i][j].s.start = 0;
 			g_field[i][j].s.goal = 0;
 			g_field[i][j].value = -1;
+			
+			/* Conditionally set point types */
+			
+			/* Set corners */
+			if ( 
+					( (j == 0) && (i == 0) ) ||
+					( (j == FIELD_N - 1) && (i == 0) ) ||
+					( (j == 0) && (i == FIELD_M - 1) ) ||
+					( (j == FIELD_N - 1) && (i == FIELD_M - 1) )
+				) {
+				g_field[i][j].type = CORNER;
+				g_field[i][j].value = 888;
+			}
+
+			/* Set edges */
+			else if ( 
+					( ( (i == 0) || (j == 0) ) && (g_field[i][j].type != CORNER) ) ||
+					( ( (i == FIELD_M-1) || (j == FIELD_N-1) ) && (g_field[i][j].type != CORNER) )
+				) {
+				g_field[i][j].type = EDGE;
+				g_field[i][j].value = 777;
+			}
+			else {
+				g_field[i][j].type = NORMAL;
+			}
 		}
 	}
-	
+
 	/* Set start and goal locations */
 	for (i=0; i < FIELD_M; i++) {
 		for(j = 0; j < FIELD_N; j++) {
@@ -120,8 +145,20 @@ int Init() {
 			if ( (!g_field[i][j].s.start) && (!g_field[i][j].s.goal)
 				&& (!g_field[i][j].s.obst) ) {
 				g_field[i][j].s.pathMarker = 1;	
-				g_field[i][j].value = -1;
 			}
+		}
+	}
+
+	/* Assign neigbors */
+	for (i = 0; i < FIELD_M; i++) {
+		for (j= 0; j < FIELD_N; j++) {
+			if ( (g_field[i][j].type != CORNER) && g_field[i][j].type != EDGE) {
+				/* Connect adjacent neighbors */
+				g_field[i][j].n_up = &g_field[i][j - 1];
+				g_field[i][j].n_down = &g_field[i + 1][j];
+				g_field[i][j].n_left = &g_field[i - 1][j];
+				g_field[i][j].n_right = &g_field[i][j + 1];
+			}	
 		}
 	}
 
@@ -131,21 +168,29 @@ int Init() {
 /*
  * Function Name: Manhattan
  * Description: Implement Manhattan distancing on game field
- * Parameters: None
+ * Parameters: int block
  * Returns: int ret
  */
-int Manhattan(void) {
+int Manhattan(int block) {
 	int i, j;
 
 	/* Find paths */
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
-			/* Only populate non obstacles and start / goal points */
-			if ( !Is_Proc_Adjacent(g_field, i, j) ) {
-				g_field[i][j].value = cnt;		
-				printf("Got Here...\n");
-			}
+			if (
+					g_field[i][j].type != CORNER && 
+					g_field[i][j].type != EDGE &&
+					!g_field[i][j].s.start &&
+					!g_field[i][j].s.goal &&
+					!g_field[i][j].s.obst &&
+					!g_field[i][j].s.processed
+				) {
+				g_field[i][j].value = block;	
+			}	
 		}
+	}
+	if (block < MAX_DISTANCE) {
+		Manhattan(++block);
 	}
 
 	return 1;
@@ -194,10 +239,10 @@ void Print_Field(void) {
  * Function Name: Meters_To_feet
  * Description: Convert meters to feet and return whole number
  * Parameters: double m
- * Returns: int r
+ * Returns: int ret
  */
 int Meters_To_Feet(double m) {
-	int r = 0;
+	int ret = 0;
 	double iptr;
 	double in;
 	
@@ -209,14 +254,9 @@ int Meters_To_Feet(double m) {
 	if (in >= 0.5)
 		m++;
 
-	r = (int) m;
+	ret = (int) m;
 	
-	if(debug) {
-		printf("in: %f\n",in);
-		printf("r: %d\n", r);
-	}
-
-	return r;
+	return ret;
 }
 
 /*
@@ -226,16 +266,22 @@ int Meters_To_Feet(double m) {
  * Returns: int r
  */
 int Is_Proc_Adjacent(struct Point p[FIELD_N][FIELD_M], int x, int y) {
-	/* Check all directions */
+		/* May not need this function anymore */
 		return 0;
 }
 
 /* Main routine */
 int main() {
 	Init();
+	Manhattan(1);
+	printf("\n");
 	Print_Field();
 	printf("\n");
-	Manhattan();
-	Print_Field();
-	printf("\n");
+	if (debug) {
+		printf("P(1,1) = %f\n", g_field[1][1].value);
+		printf("Left = %f\n", g_field[1][1].n_left -> value);
+		printf("Right = %f\n", g_field[1][1].n_right -> value);
+		printf("Up = %f\n", g_field[1][1].n_up -> value);
+		printf("Down = %f\n", g_field[1][1].n_down -> value);
+	}
 }
