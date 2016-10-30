@@ -57,10 +57,7 @@ struct Point {
  */
 struct Point g_field[FIELD_M][FIELD_N];
 struct Point g_goalPoint, g_startPoint;
-int g_obstW = 3;
-int g_obstH = 2;
-int cnt = 1;
-int debug = 1;
+int g_debug = 1;
 
 /*
  * Function Name: Init
@@ -115,21 +112,20 @@ int Init() {
 			}
 		}
 	}
-	//Print_Field();
 
 	/* Set start and goal locations */
-	for (i=0; i < FIELD_M; i++) {
+	for (i = 0; i < FIELD_M; i++) {
 		for(j = 0; j < FIELD_N; j++) {
-			if ( (g_field[i][j].x == Meters_To_Feet(g_start[0]) )
-				&& (g_field[i][j].y == Meters_To_Feet(g_start[1])) ) {
+			if ( (g_field[i][j].x == Meters_To_Feet(start[0]) )
+				&& (g_field[i][j].y == Meters_To_Feet(start[1])) ) {
 				g_field[i][j].s.start = 1;
 				g_field[i][j].s.processed = 0;
 				g_field[i][j].s.next = 0;
 				g_field[i][j].value = 111;
 				g_startPoint = g_field[i][j];
 			}
-			else if ( (g_field[i][j].x == Meters_To_Feet(g_goal[0]) )
-				&& (g_field[i][j].y == Meters_To_Feet(g_goal[1])) ) {
+			else if ( (g_field[i][j].x == Meters_To_Feet(goal[0]) )
+				&& (g_field[i][j].y == Meters_To_Feet(goal[1])) ) {
 				g_field[i][j].s.goal = 1;
 				g_field[i][j].s.processed = 0;
 				g_field[i][j].s.next = 0;
@@ -138,14 +134,13 @@ int Init() {
 			}
 		}
 	}
-	//Print_Field();
 
 	/* Set obstacle locations*/
 	for (i = 0; i < FIELD_M; i++) {
 		for(j = 0; j < FIELD_N; j++) {
 			for (k = 0; k < MAX_OBSTACLES; k++) {
-				if ( (g_field[i][j].x == Meters_To_Feet(g_obstacle[k][0]) )
-					&& (g_field[i][j].y == Meters_To_Feet(g_obstacle[k][1]) ) ) {
+				if ( (g_field[i][j].x == Meters_To_Feet(obstacle[k][0]) )
+					&& (g_field[i][j].y == Meters_To_Feet(obstacle[k][1]) ) ) {
 					g_field[i][j].s.obst = 1;
 					g_field[i][j].s.processed = 0;
 					g_field[i][j].s.next = 0;
@@ -154,7 +149,6 @@ int Init() {
 			}
 		}
 	}
-	//Print_Field();
 
 	/* Set path locations*/
 	for (i = 0; i < FIELD_M; i++) {
@@ -168,12 +162,12 @@ int Init() {
 			}
 		}
 	}
-	//Print_Field();
 
 	/* Assign neighbors */
 	for (i = 0; i < FIELD_M; i++) {
 		for (j= 0; j < FIELD_N; j++) {
 			if ( (g_field[i][j].type != CORNER) && g_field[i][j].type != EDGE) {
+
 				/* Connect adjacent neighbors */
 				g_field[i][j].n_up = &g_field[i - 1][j];
 				g_field[i][j].n_down = &g_field[i + 1][j];
@@ -182,7 +176,6 @@ int Init() {
 			}	
 		}
 	}
-	//Print_Field();
 
 	return 1;
 }
@@ -229,7 +222,7 @@ int Manhattan(int block) {
 				else {
 					if (g_field[i][j].s.next) {
 
-						/* Update current path increment */
+						/* Update current path point */
 						g_field[i][j].s.next = 0;	
 						g_field[i][j].s.processed = 1;	
 						g_field[i][j].value = block;	
@@ -243,6 +236,7 @@ int Manhattan(int block) {
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
 			if (g_field[i][j].value == block) {
+
 				/* Lock adjacent points */
 				g_field[i][j].n_up -> s.next = 1; 
 				g_field[i][j].n_down -> s.next = 1; 
@@ -252,6 +246,8 @@ int Manhattan(int block) {
 			}
 		}
 	}
+
+	/* Recursive call */
 	if (block < MAX_DISTANCE) {
 		Manhattan(++block);
 	}
@@ -267,40 +263,17 @@ int Manhattan(int block) {
  */
 void Print_Field(void) {
 	int i,j;
-	
-	printf("PROCESSED:\n");
-	for (i = 0; i < FIELD_M; i++) {
-		for (j = 0; j < FIELD_N; j++) {
-			if(debug){
-				printf("%3d ", g_field[i][j].s.next);
-			}
-		}
-		printf("\n");
-		printf("\n");
-	}
 
 	printf("VALUES:\n");
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
-			if(debug){
+			if(g_debug){
 				printf("%3.0f ", g_field[i][j].value, i, j);
 			}
 		}
 		printf("\n");
 		printf("\n");
 	}
-/*
-	printf("START:\n");
-	for (i = 0; i < FIELD_M; i++) {
-		for (j = 0; j < FIELD_N; j++) {
-			if(debug){
-				printf("%3d ", g_field[i][j].s.start);
-			}
-		}
-		printf("\n");
-		printf("\n");
-	}
-*/
 }
 
 /*
@@ -334,13 +307,4 @@ int main() {
 	printf("\n");
 	Print_Field();
 	printf("\n");
-	printf("Left (4,11) = %3.0f", g_field[1][11].n_down -> value);
-/*	if (debug) {
-		printf("P(1,1) = %f\n", g_field[1][1].value);
-		printf("Left = %f\n", g_field[1][1].n_left -> value);
-		printf("Right = %f\n", g_field[1][1].n_right -> value);
-		printf("Up = %f\n", g_field[1][1].n_up -> value);
-		printf("Down = %f\n", g_field[1][1].n_down -> value);
-		printf("goalPoint: (%f, %f)\n", g_goalPoint.x, g_goalPoint.y);
-	}*/
 }
