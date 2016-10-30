@@ -310,6 +310,10 @@ int Find_Path(void) {
 	int i = 0;
 	int cnt = 0;
 	struct Point current = *g_goalPoint;
+	
+	/* Set up Manhattan mapped grid */
+	Init();
+	Manhattan(1);
 
 	/* Start searching from goal */
 	do {
@@ -390,7 +394,5 @@ int main() {
 	Init();
 	Manhattan(1);
 	Find_Path();
-	printf("\n");
 	Print_Field();
-	printf("\n");
 }
