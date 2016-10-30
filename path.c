@@ -55,7 +55,7 @@ struct Point {
  * GLOBAL VARS
  */
 struct Point g_field[FIELD_M][FIELD_N];
-struct Point g_goalPoint, g_startPoint;;
+struct Point g_goalPoint, g_startPoint;
 int g_obstW = 3;
 int g_obstH = 2;
 int cnt = 1;
@@ -80,7 +80,7 @@ int Init() {
 			g_field[i][j].s.start = 0;
 			g_field[i][j].s.goal = 0;
 			g_field[i][j].value = -1;
-			
+
 			/* Conditionally set point types */
 			
 			/* Set corners */
@@ -107,9 +107,11 @@ int Init() {
 			else {
 				g_field[i][j].type = NORMAL;
 				g_field[i][j].s.processed = 0;
+				//g_field[i][j].s.processed = 3;
 			}
 		}
 	}
+	//Print_Field();
 
 	/* Set start and goal locations */
 	for (i=0; i < FIELD_M; i++) {
@@ -130,6 +132,7 @@ int Init() {
 			}
 		}
 	}
+	//Print_Field();
 
 	/* Set obstacle locations*/
 	for (i = 0; i < FIELD_M; i++) {
@@ -144,30 +147,34 @@ int Init() {
 			}
 		}
 	}
+	//Print_Field();
 
 	/* Set path locations*/
 	for (i = 0; i < FIELD_M; i++) {
 		for(j = 0; j < FIELD_N; j++) {
-			if ( (!g_field[i][j].s.start) && (!g_field[i][j].s.goal)
-				&& (!g_field[i][j].s.obst) ) {
+			if ( (!g_field[i][j].s.start) && (!g_field[i][j].s.goal) && 
+					(!g_field[i][j].s.obst) && (g_field[i][j].type != EDGE) && 
+					(g_field[i][j].type != CORNER) ) {
 				g_field[i][j].s.pathMarker = 1;	
 				g_field[i][j].s.processed = 0;
 			}
 		}
 	}
+	//Print_Field();
 
-	/* Assign neigbors */
+	/* Assign neighbors */
 	for (i = 0; i < FIELD_M; i++) {
 		for (j= 0; j < FIELD_N; j++) {
 			if ( (g_field[i][j].type != CORNER) && g_field[i][j].type != EDGE) {
 				/* Connect adjacent neighbors */
-				g_field[i][j].n_up = &g_field[i][j - 1];
+				g_field[i][j].n_up = &g_field[i - 1][j];
 				g_field[i][j].n_down = &g_field[i + 1][j];
-				g_field[i][j].n_left = &g_field[i - 1][j];
+				g_field[i][j].n_left = &g_field[i][j - 1];
 				g_field[i][j].n_right = &g_field[i][j + 1];
 			}	
 		}
 	}
+	//Print_Field();
 
 	return 1;
 }
@@ -200,9 +207,10 @@ int Manhattan(int block) {
 						g_field[i][j].n_down -> s.goal ||
 						g_field[i][j].n_left -> s.goal ||	
 						g_field[i][j].n_right -> s.goal	
-					)
+					) {
 						g_field[i][j].s.processed = 1;
-						g_field[i][j].value = block;	
+						g_field[i][j].value = block;
+					}						
 				}
 
 				/* In remaining passes check for processed points and start */
@@ -236,13 +244,13 @@ int Manhattan(int block) {
 						(g_field[i][j].n_down -> s.processed)) {
 						g_field[i][j].s.processed = 1;
 						g_field[i][j].value = block;	
+						printf("Maybe?\n");
 					}
 					/* If current point is below the goal */
 					else if ( ((g_field[i][j].y < g_goalPoint.y) && (g_field[i][j].x == g_goalPoint.x)) &&
 						(g_field[i][j].n_up -> s.processed)) {
 						g_field[i][j].s.processed = 1;
 						g_field[i][j].value = block;	
-						printf("Maybe?\n");
 					}
 					/* If current point is to the right of the goal */
 					else if ( ((g_field[i][j].y == g_goalPoint.y) && (g_field[i][j].x > g_goalPoint.x)) &&
@@ -258,7 +266,6 @@ int Manhattan(int block) {
 					}
 					else {
 						/* Should never get here */
-						printf("Got there...\n");
 					}
 				}
 			}	
@@ -272,24 +279,6 @@ int Manhattan(int block) {
 }
 
 /*
- * Function Name: Gen_Obst
- * Description: Generate an obstacle for the field
- * Parameters: w, h
- * Returns: int ret
- */
-void Gen_Obst(int w, int h) {
-	int i,j;
-
-	/* Create obstacle */
-	for (i = 0; i < h; i++) {
-		for (j = 0; j < w; j++) {
-			g_field[i + h][j + w].value = 0;
-			g_field[i + h][j + w].s.obst = 1;
-		}
-	}
-}
-
-/*
  * Function Name: Print_Field
  * Description: Show field
  * Parameters: none
@@ -297,17 +286,40 @@ void Gen_Obst(int w, int h) {
  */
 void Print_Field(void) {
 	int i,j;
-
+	
+	printf("PROCESSED:\n");
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
-			//printf("%4.0f ", g_field[i][j].value);
 			if(debug){
-				printf("%3.0f ", g_field[i][j].value);
+				printf("%3d ", g_field[i][j].s.processed);
 			}
 		}
 		printf("\n");
 		printf("\n");
 	}
+
+	printf("VALUES:\n");
+	for (i = 0; i < FIELD_M; i++) {
+		for (j = 0; j < FIELD_N; j++) {
+			if(debug){
+				printf("%3.0f ", g_field[i][j].value, i, j);
+			}
+		}
+		printf("\n");
+		printf("\n");
+	}
+/*
+	printf("START:\n");
+	for (i = 0; i < FIELD_M; i++) {
+		for (j = 0; j < FIELD_N; j++) {
+			if(debug){
+				printf("%3d ", g_field[i][j].s.start);
+			}
+		}
+		printf("\n");
+		printf("\n");
+	}
+*/
 }
 
 /*
@@ -334,17 +346,6 @@ int Meters_To_Feet(double m) {
 	return ret;
 }
 
-/*
- * Function Name: Is_Proc_Adjacent
- * Description: Determine if a processed point is nearby
- * Parameters: struct Point p, int x, int y
- * Returns: int r
- */
-int Is_Proc_Adjacent(struct Point p[FIELD_N][FIELD_M], int x, int y) {
-		/* May not need this function anymore */
-		return 0;
-}
-
 /* Main routine */
 int main() {
 	Init();
@@ -352,12 +353,13 @@ int main() {
 	printf("\n");
 	Print_Field();
 	printf("\n");
-	if (debug) {
+	printf("Left (4,11) = %3.0f", g_field[1][11].n_down -> value);
+/*	if (debug) {
 		printf("P(1,1) = %f\n", g_field[1][1].value);
 		printf("Left = %f\n", g_field[1][1].n_left -> value);
 		printf("Right = %f\n", g_field[1][1].n_right -> value);
 		printf("Up = %f\n", g_field[1][1].n_up -> value);
 		printf("Down = %f\n", g_field[1][1].n_down -> value);
 		printf("goalPoint: (%f, %f)\n", g_goalPoint.x, g_goalPoint.y);
-	}
+	}*/
 }
