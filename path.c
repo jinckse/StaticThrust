@@ -1,7 +1,6 @@
 /*
  * File: path.c
  * Description: Path planning function C module
- * TODO: Implement neighbor assignment for graph algorithm after general initializing
  */
 
 #include <stdio.h>
@@ -56,8 +55,9 @@ struct Point {
  * GLOBAL VARS
  */
 struct Point g_field[FIELD_M][FIELD_N];
-struct Point g_goalPoint, g_startPoint;
+struct Point *g_goalPoint, *g_startPoint;
 int g_debug = 1;
+struct Point g_path[FIELD_M * FIELD_N];
 
 /*
  * Function Name: Init
@@ -92,7 +92,7 @@ int Init() {
 				g_field[i][j].type = CORNER;
 				g_field[i][j].s.processed = 0;
 				g_field[i][j].s.next = 0;
-				g_field[i][j].value = 888;
+				g_field[i][j].value = -88;
 			}
 
 			/* Set edges */
@@ -103,7 +103,7 @@ int Init() {
 				g_field[i][j].type = EDGE;
 				g_field[i][j].s.processed = 0;
 				g_field[i][j].s.next = 0;
-				g_field[i][j].value = 777;
+				g_field[i][j].value = -77;
 			}
 			else {
 				g_field[i][j].type = NORMAL;
@@ -121,16 +121,16 @@ int Init() {
 				g_field[i][j].s.start = 1;
 				g_field[i][j].s.processed = 0;
 				g_field[i][j].s.next = 0;
-				g_field[i][j].value = 111;
-				g_startPoint = g_field[i][j];
+				g_field[i][j].value = (FIELD_M * FIELD_N);;
+				g_startPoint = &g_field[i][j];
 			}
 			else if ( (g_field[i][j].x == Meters_To_Feet(goal[0]) )
 				&& (g_field[i][j].y == Meters_To_Feet(goal[1])) ) {
 				g_field[i][j].s.goal = 1;
 				g_field[i][j].s.processed = 0;
 				g_field[i][j].s.next = 0;
-				g_field[i][j].value = 999;
-				g_goalPoint = g_field[i][j];
+				g_field[i][j].value = 0;
+				g_goalPoint = &g_field[i][j];
 			}
 		}
 	}
@@ -144,7 +144,7 @@ int Init() {
 					g_field[i][j].s.obst = 1;
 					g_field[i][j].s.processed = 0;
 					g_field[i][j].s.next = 0;
-					g_field[i][j].value = 666;
+					g_field[i][j].value = -66;
 				}
 			}
 		}
@@ -300,10 +300,96 @@ int Meters_To_Feet(double m) {
 	return ret;
 }
 
+/*
+ * Function Name: Find_Path
+ * Description: Find a path to the goal and return it
+ * Parameters: None
+ * Returns: int r
+ */
+int Find_Path(void) {
+	int i = 0;
+	int cnt = 0;
+	struct Point current = *g_goalPoint;
+
+	/* Start searching from goal */
+	do {
+
+		/* Not near an edge */
+		if (current.x > 2 && current.y > 2) {	
+
+			/* Look two points ahead to determine path */
+			if (current.n_up -> value > current.value && 
+				current.n_up -> n_up -> value > current.value) {
+				g_path[i] = current;
+				current = *current.n_up;	
+			}
+			else if (current.n_down -> value > current.value && 
+				current.n_down -> n_down -> value > current.value) {
+				g_path[i] = current;
+				current = *current.n_down;	
+			}
+			else if (current.n_left -> value > current.value && 
+				current.n_left -> n_left -> value > current.value) {
+				g_path[i] = current;
+				current = *current.n_left;	
+			}
+			else if (current.n_right -> value > current.value && 
+				current.n_right -> n_right -> value > current.value) {
+				g_path[i] = current;
+				current = *current.n_right;	
+			}
+
+			/* Track number of points in path */
+			cnt++;
+		}
+		else {
+
+			/* Look one point ahead to determine path */
+			if (current.n_up -> value > current.value) {
+				g_path[i] = current;
+				current = *current.n_up;	
+			}
+			else if (current.n_down -> value > current.value) {
+				g_path[i] = current;
+				current = *current.n_down;	
+			}
+			else if (current.n_left -> value > current.value) {
+				g_path[i] = current;
+				current = *current.n_left;	
+			}
+			else if (current.n_right -> value > current.value) {
+				g_path[i] = current;
+				current = *current.n_right;	
+			}
+
+			/* Track number of points in path */
+			cnt++;
+		}
+		g_path[i].s.processed = 1;
+		i++;
+	}
+	while(current.value != g_startPoint -> value);
+	
+	/* Save start position */
+	g_path[i] = current;
+	cnt++;
+
+	if (g_debug) {
+		printf("PATH: \n");
+		for (i = 0; i < cnt; i++) {
+				printf("(%2.0f, %2.0f): %2.0f \n", g_path[i].x, g_path[i].y, g_path[i].value);
+		}
+		printf("cnt = %d\n", cnt);
+	}
+
+	return 1;
+}
+
 /* Main routine */
 int main() {
 	Init();
 	Manhattan(1);
+	Find_Path();
 	printf("\n");
 	Print_Field();
 	printf("\n");
