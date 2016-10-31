@@ -20,6 +20,11 @@
 #define CORNER 2
 #define EDGE 3
 
+#define NORTH 10
+#define SOUTH 20
+#define EAST  30
+#define WEST 40
+
 /* 
  * MACROS
  */
@@ -49,6 +54,7 @@ struct Point {
 	struct Point* n_down;
 	struct Point* n_left;
 	struct Point* n_right;
+	int move;
 };
 
 /*
@@ -326,21 +332,25 @@ int Find_Path(void) {
 				current.n_up -> n_up -> value > current.value) {
 				g_path[i] = current;
 				current = *current.n_up;	
+				g_path[i].move = NORTH;
 			}
 			else if (current.n_down -> value > current.value && 
 				current.n_down -> n_down -> value > current.value) {
 				g_path[i] = current;
 				current = *current.n_down;	
+				g_path[i].move = SOUTH;
 			}
 			else if (current.n_left -> value > current.value && 
 				current.n_left -> n_left -> value > current.value) {
 				g_path[i] = current;
 				current = *current.n_left;	
+				g_path[i].move = WEST;
 			}
 			else if (current.n_right -> value > current.value && 
 				current.n_right -> n_right -> value > current.value) {
 				g_path[i] = current;
 				current = *current.n_right;	
+				g_path[i].move = EAST;
 			}
 
 			/* Track number of points in path */
@@ -352,18 +362,22 @@ int Find_Path(void) {
 			if (current.n_up -> value > current.value) {
 				g_path[i] = current;
 				current = *current.n_up;	
+				g_path[i].move = NORTH;
 			}
 			else if (current.n_down -> value > current.value) {
 				g_path[i] = current;
 				current = *current.n_down;	
+				g_path[i].move = SOUTH;
 			}
 			else if (current.n_left -> value > current.value) {
 				g_path[i] = current;
 				current = *current.n_left;	
+				g_path[i].move = WEST;
 			}
 			else if (current.n_right -> value > current.value) {
 				g_path[i] = current;
 				current = *current.n_right;	
+				g_path[i].move = EAST;
 			}
 
 			/* Track number of points in path */
@@ -381,7 +395,8 @@ int Find_Path(void) {
 	if (g_debug) {
 		printf("PATH: \n");
 		for (i = 0; i < cnt; i++) {
-				printf("(%2.0f, %2.0f): %2.0f \n", g_path[i].x, g_path[i].y, g_path[i].value);
+				printf("(%2.0f, %2.0f): %2.0f -> %2d\n", 
+					g_path[i].x, g_path[i].y, g_path[i].value, g_path[i].move);
 		}
 		printf("cnt = %d\n", cnt);
 	}
