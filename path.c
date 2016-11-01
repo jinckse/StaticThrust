@@ -25,7 +25,11 @@
 #define EAST  30
 #define WEST 40
 
-/* 
+#define MOVE 4
+#define TURN_L 5
+#define TURN_R 6
+
+/*
  * MACROS
  */
 
@@ -87,9 +91,9 @@ int Init() {
 			g_field[i][j].value = -1;
 
 			/* Conditionally set point types */
-			
+
 			/* Set corners */
-			if ( 
+			if (
 					( (j == 0) && (i == 0) ) ||
 					( (j == FIELD_N - 1) && (i == 0) ) ||
 					( (j == 0) && (i == FIELD_M - 1) ) ||
@@ -102,7 +106,7 @@ int Init() {
 			}
 
 			/* Set edges */
-			else if ( 
+			else if (
 					( ( (i == 0) || (j == 0) ) && (g_field[i][j].type != CORNER) ) ||
 					( ( (i == FIELD_M-1) || (j == FIELD_N-1) ) && (g_field[i][j].type != CORNER) )
 				) {
@@ -159,10 +163,10 @@ int Init() {
 	/* Set path locations*/
 	for (i = 0; i < FIELD_M; i++) {
 		for(j = 0; j < FIELD_N; j++) {
-			if ( (!g_field[i][j].s.start) && (!g_field[i][j].s.goal) && 
-					(!g_field[i][j].s.obst) && (g_field[i][j].type != EDGE) && 
+			if ( (!g_field[i][j].s.start) && (!g_field[i][j].s.goal) &&
+					(!g_field[i][j].s.obst) && (g_field[i][j].type != EDGE) &&
 					(g_field[i][j].type != CORNER) ) {
-				g_field[i][j].s.pathMarker = 1;	
+				g_field[i][j].s.pathMarker = 1;
 				g_field[i][j].s.processed = 0;
 				g_field[i][j].s.next = 0;
 			}
@@ -179,7 +183,7 @@ int Init() {
 				g_field[i][j].n_down = &g_field[i + 1][j];
 				g_field[i][j].n_left = &g_field[i][j - 1];
 				g_field[i][j].n_right = &g_field[i][j + 1];
-			}	
+			}
 		}
 	}
 
@@ -199,7 +203,7 @@ int Manhattan(int block) {
 	for (i = 0; i < FIELD_M; i++) {
 		for (j = 0; j < FIELD_N; j++) {
 			if (
-					g_field[i][j].type != CORNER && 
+					g_field[i][j].type != CORNER &&
 					g_field[i][j].type != EDGE &&
 					!g_field[i][j].s.start &&
 					!g_field[i][j].s.goal &&
@@ -209,29 +213,29 @@ int Manhattan(int block) {
 
 				/* In first pass check for goal */
 				if(block == 1) {
-					if ( 
+					if (
 						g_field[i][j].n_up -> s.goal ||
 						g_field[i][j].n_down -> s.goal ||
-						g_field[i][j].n_left -> s.goal ||	
-						g_field[i][j].n_right -> s.goal	
+						g_field[i][j].n_left -> s.goal ||
+						g_field[i][j].n_right -> s.goal
 					) {
 						g_field[i][j].s.processed = 1;
 						g_field[i][j].value = block;
-						
+
 						/* Lock adjacent points */
-						g_field[i][j].n_up -> s.next = 1; 
-						g_field[i][j].n_down -> s.next = 1; 
-						g_field[i][j].n_left -> s.next = 1; 
-						g_field[i][j].n_right -> s.next = 1;	
-					}						
+						g_field[i][j].n_up -> s.next = 1;
+						g_field[i][j].n_down -> s.next = 1;
+						g_field[i][j].n_left -> s.next = 1;
+						g_field[i][j].n_right -> s.next = 1;
+					}
 				}
 				else {
 					if (g_field[i][j].s.next) {
 
 						/* Update current path point */
-						g_field[i][j].s.next = 0;	
-						g_field[i][j].s.processed = 1;	
-						g_field[i][j].value = block;	
+						g_field[i][j].s.next = 0;
+						g_field[i][j].s.processed = 1;
+						g_field[i][j].value = block;
 						}
 					}
 				}
@@ -244,10 +248,10 @@ int Manhattan(int block) {
 			if (g_field[i][j].value == block) {
 
 				/* Lock adjacent points */
-				g_field[i][j].n_up -> s.next = 1; 
-				g_field[i][j].n_down -> s.next = 1; 
-				g_field[i][j].n_left -> s.next = 1; 
-				g_field[i][j].n_right -> s.next = 1;	
+				g_field[i][j].n_up -> s.next = 1;
+				g_field[i][j].n_down -> s.next = 1;
+				g_field[i][j].n_left -> s.next = 1;
+				g_field[i][j].n_right -> s.next = 1;
 
 			}
 		}
@@ -292,17 +296,17 @@ int Meters_To_Feet(double m) {
 	int ret = 0;
 	double iptr;
 	double in;
-	
+
 	m = m / CELL_WIDTH;
 
 	/* Store integral part of m */
 	in = modf(m, &iptr);
-	
+
 	if (in >= 0.5)
 		m++;
 
 	ret = (int) m;
-	
+
 	return ret;
 }
 
@@ -316,7 +320,7 @@ int Find_Path(void) {
 	int i = 0;
 	int cnt = 0;
 	struct Point current = *g_goalPoint;
-	
+
 	/* Set up Manhattan mapped grid */
 	Init();
 	Manhattan(1);
@@ -325,31 +329,31 @@ int Find_Path(void) {
 	do {
 
 		/* Not near an edge */
-		if (current.x > 2 && current.y > 2) {	
+		if (current.x > 2 && current.y > 2) {
 
 			/* Look two points ahead to determine path */
-			if (current.n_up -> value > current.value && 
+			if (current.n_up -> value > current.value &&
 				current.n_up -> n_up -> value > current.value) {
 				g_path[i] = current;
-				current = *current.n_up;	
+				current = *current.n_up;
 				g_path[i].move = NORTH;
 			}
-			else if (current.n_down -> value > current.value && 
+			else if (current.n_down -> value > current.value &&
 				current.n_down -> n_down -> value > current.value) {
 				g_path[i] = current;
-				current = *current.n_down;	
+				current = *current.n_down;
 				g_path[i].move = SOUTH;
 			}
-			else if (current.n_left -> value > current.value && 
+			else if (current.n_left -> value > current.value &&
 				current.n_left -> n_left -> value > current.value) {
 				g_path[i] = current;
-				current = *current.n_left;	
+				current = *current.n_left;
 				g_path[i].move = WEST;
 			}
-			else if (current.n_right -> value > current.value && 
+			else if (current.n_right -> value > current.value &&
 				current.n_right -> n_right -> value > current.value) {
 				g_path[i] = current;
-				current = *current.n_right;	
+				current = *current.n_right;
 				g_path[i].move = EAST;
 			}
 
@@ -361,22 +365,22 @@ int Find_Path(void) {
 			/* Look one point ahead to determine path */
 			if (current.n_up -> value > current.value) {
 				g_path[i] = current;
-				current = *current.n_up;	
+				current = *current.n_up;
 				g_path[i].move = NORTH;
 			}
 			else if (current.n_down -> value > current.value) {
 				g_path[i] = current;
-				current = *current.n_down;	
+				current = *current.n_down;
 				g_path[i].move = SOUTH;
 			}
 			else if (current.n_left -> value > current.value) {
 				g_path[i] = current;
-				current = *current.n_left;	
+				current = *current.n_left;
 				g_path[i].move = WEST;
 			}
 			else if (current.n_right -> value > current.value) {
 				g_path[i] = current;
-				current = *current.n_right;	
+				current = *current.n_right;
 				g_path[i].move = EAST;
 			}
 
@@ -387,7 +391,7 @@ int Find_Path(void) {
 		i++;
 	}
 	while(current.value != g_startPoint -> value);
-	
+
 	/* Save start position */
 	g_path[i] = current;
 	cnt++;
@@ -395,7 +399,7 @@ int Find_Path(void) {
 	if (g_debug) {
 		printf("PATH: \n");
 		for (i = 0; i < cnt; i++) {
-				printf("(%2.0f, %2.0f): %2.0f -> %2d\n", 
+				printf("(%2.0f, %2.0f): %2.0f -> %2d\n",
 					g_path[i].x, g_path[i].y, g_path[i].value, g_path[i].move);
 		}
 		printf("cnt = %d\n", cnt);
@@ -404,6 +408,216 @@ int Find_Path(void) {
 	return 1;
 }
 
+/*
+ * Function Name: Path_To_Robot
+ * Description: Given an array of points, convert it to an array of instructions.
+ * Parameters: path_length is the length of the g_path array.
+ * Returns: int[] instruction_list
+ * Note: Iterates g_path in reverse, and direction of next.move is always the opposite direction that the robot wants to go.
+ *       EX. (1,4) is the start, and (1,5) is next, but next.move = SOUTH even though robot wants to go NORTH.
+ *       However, cur_direction is always the correct direction the robot is actually pointing.
+ */
+int Path_To_Robot(int path_length){
+    int i, cur_direction;
+    int instruction_list[path_length * 3]; //worst case scenario every coordinate change takes 3 commands.
+    int j = 0;
+    for(i = path_length - 1; i > 0; i--){
+        struct Point cur = g_path[i];
+        struct Point next = g_path[i--];
+        if(cur.move == 0){ /*ASSUME STARTING EAST*/
+            //assume bot starts facing east
+            cur_direction = EAST;
+            if(next.move == NORTH){
+                //turn right
+                instruction_list[j] = TURN_R;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+
+                cur_direction = SOUTH;
+            }
+            else if(next.move == SOUTH){
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+                cur_direction = NORTH;
+            }
+            else if(next.move == EAST){
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+                //curDirection = WEST
+                cur_direction = WEST;
+            }
+            else if(next.move == WEST){
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+                //curDirection = EAST
+                cur_direction = EAST;
+            }
+        }
+        else if(next.move == NORTH){ /* NORTH IS SOUTH*/
+                if(cur_direction == NORTH){
+                    //turn left
+                    instruction_list[j] = TURN_L;
+                    j++;
+                    //turn left
+                    instruction_list[j] = TURN_L;
+                    j++;
+                    //move
+                    instruction_list[j] = MOVE;
+                    j++;
+
+
+                }
+                else if(cur_direction == SOUTH){
+                    //move
+                    instruction_list[j] = MOVE;
+                    j++;
+                }
+                else if(cur_direction == EAST){
+                    //turn right
+                    instruction_list[j] = TURN_R;
+                    j++;
+                    //move
+                    instruction_list[j] = MOVE;
+                    j++;
+                }
+                else if(cur_direction == WEST){
+                    //turn left
+                    instruction_list[j] = TURN_L;
+                    j++;
+                    //move
+                    instruction_list[j] = MOVE;
+                    j++;
+                }
+            cur_direction = SOUTH;
+        }
+        else if(next.move == SOUTH){ /*SOUTH IS NORTH*/
+            if(cur_direction == NORTH){
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            else if(cur_direction == SOUTH){
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            else if(cur_direction == EAST){
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            else if(cur_direction == WEST){
+                //turn right
+                instruction_list[j] = TURN_R;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            cur_direction = NORTH;
+        }
+        else if(next.move == EAST){ /*EAST IS WEST*/
+            if(cur_direction == NORTH){
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            else if(cur_direction == SOUTH){
+                //turn right
+                instruction_list[j] = TURN_R;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            else if(cur_direction == EAST){
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            else if(cur_direction == WEST){
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            cur_direction = WEST;
+        }
+        else if(next.move == WEST){ /*WEST IS EAST*/
+            if(cur_direction == NORTH){
+                //turn right
+                instruction_list[j] = TURN_R;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            else if(cur_direction == SOUTH){
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            else if(cur_direction == EAST){
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            else if(cur_direction == WEST){
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //turn left
+                instruction_list[j] = TURN_L;
+                j++;
+                //move
+                instruction_list[j] = MOVE;
+                j++;
+            }
+            cur_direction = EAST;
+        }
+    }
+    return instruction_list;
+}
+
+/*
+* Function Name: Execute_Path
+* Description: Read through the instruction_list array and calls the actual robot control functions
+* Parameters: instruction_list array*/
+Execute_Path(int *instruction_list){}
 /* Main routine */
 int main() {
 	Init();
