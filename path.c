@@ -61,6 +61,12 @@ struct Point {
 	int move;
 };
 
+/* Instructions */
+struct Instructions {
+    int length;
+    int *instruction_list;
+};
+
 /*
  * GLOBAL VARS
  */
@@ -405,7 +411,7 @@ int Find_Path(void) {
 		printf("cnt = %d\n", cnt);
 	}
 
-	return 1;
+	return cnt;
 }
 
 /*
@@ -417,13 +423,16 @@ int Find_Path(void) {
  *       EX. (1,4) is the start, and (1,5) is next, but next.move = SOUTH even though robot wants to go NORTH.
  *       However, cur_direction is always the correct direction the robot is actually pointing.
  */
-int Path_To_Robot(int path_length){
+struct Instructions Path_To_Robot(int path_length){
     int i, cur_direction;
     int instruction_list[path_length * 3]; //worst case scenario every coordinate change takes 3 commands.
     int j = 0;
-    for(i = path_length - 1; i > 0; i--){
+    printf("path_length is: %d\n", path_length);
+    for(i = path_length - 1; i > 0; i = i - 1){
+        printf("i: %d (%2.0f, %2.0f): %2.0f -> %2d\n",
+					i,g_path[i].x, g_path[i].y, g_path[i].value, g_path[i].move);
         struct Point cur = g_path[i];
-        struct Point next = g_path[i--];
+        struct Point next = g_path[i - 1];
         if(cur.move == 0){ /*ASSUME STARTING EAST*/
             //assume bot starts facing east
             cur_direction = EAST;
@@ -610,18 +619,42 @@ int Path_To_Robot(int path_length){
             cur_direction = EAST;
         }
     }
-    return instruction_list;
+
+
+    struct Instructions robot_path;
+    robot_path.instruction_list = instruction_list;
+    robot_path.length = j;
+
+    return robot_path;
 }
 
 /*
 * Function Name: Execute_Path
 * Description: Read through the instruction_list array and calls the actual robot control functions
-* Parameters: instruction_list array*/
-Execute_Path(int *instruction_list){}
+* Parameters: instruction_list array
+* Returns: None*/
+void Execute_Path(struct Instructions path){
+    int i;
+    for(i = 0; i < path.length; i++){
+        if(path.instruction_list[i] == TURN_L)
+            printf("Turn Left\n");
+        else if(path.instruction_list[i] == TURN_R)
+            printf("Turn Right\n");
+        else if(path.instruction_list[i] == MOVE)
+            printf("Move\n");
+    }
+}
 /* Main routine */
 int main() {
+    int path_length;
+
 	Init();
 	Manhattan(1);
-	Find_Path();
+    path_length = Find_Path();
 	Print_Field();
+
+	/*Convert path and execute*/
+	struct Instructions path;
+	path = Path_To_Robot(path_length);
+	Execute_Path(path);
 }
